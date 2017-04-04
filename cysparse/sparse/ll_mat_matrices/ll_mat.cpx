@@ -1347,7 +1347,7 @@ YOU HAVE TO DEFINE OR CAST YOUR NEW UNRECOGNIZED COMPLEX TYPE
         Args:
             id1, id2: List or :program:`NumPy` arrays with indices. Both **must** be of the same type. In case of :program:`NumPy` arrays, they must
                 contain elements of type @index@ and must be C-contiguous.
-            b: List or :program:`NumpY` array to fill with the values.
+            b: Scalar, list, or :program:`NumPy` array of values. If b is a scalar, the same value is inserted in every location A[id1[i],id2[i]].
 
         Raises:
             ``TypeError`` is both arguments to give indices are not of the same type (``list`` or :program:`NumPy` arrays) or if
@@ -1368,10 +1368,13 @@ YOU HAVE TO DEFINE OR CAST YOUR NEW UNRECOGNIZED COMPLEX TYPE
             @index@ id1_array_length, id2_array_length, b_array_length, i_array  # in case we have numpy arrays
 
 
-        # if case of NumPy arrays
+        # in case of NumPy arrays
         cdef @index@ * id1_data
         cdef @index@ * id2_data
         cdef @type@ * b_data
+
+        # in case of scalar b
+        cdef @type@ b_scalar
 
         # stride size if any
         cdef size_t sd = sizeof(@type@)
@@ -1444,10 +1447,20 @@ YOU HAVE TO EXPLICITY CAST YOUR TYPE
                         self.safe_put(PyInt_AS_LONG(PyList_GET_ITEM(<PyObject *>id1, i_list)), PyInt_AS_LONG(PyList_GET_ITEM(<PyObject *>id2, i_list)), <@type@> b_data[i_list * b_data_incx])
 
             ############################################################################################################
+            # CASE: b is a number
+            ############################################################################################################
+            elif isinstance(b, (int, float, complex)):
+                # cast as correct data type once
+                b_scalar = <@type@> b
+
+                for i_list from 0 <= i_list < id1_list_length:
+                    self.safe_put(PyInt_AS_LONG(PyList_GET_ITEM(<PyObject *>id1, i_list)), PyInt_AS_LONG(PyList_GET_ITEM(<PyObject *>id2, i_list)), b_scalar)
+
+            ############################################################################################################
             # CASE: b is ???
             ############################################################################################################
             else:
-                raise TypeError('Value argument should be a list or a NumPy array')
+                raise TypeError('Value argument should be a scalar, a list, or a NumPy array')
 
         ################################################################################################################
         # CASE: id1 and id2 are NumPy arrays
@@ -1517,12 +1530,21 @@ YOU HAVE TO EXPLICITY CAST YOUR TYPE
                     for i_array from 0 <= i_array < id1_array_length:
                         self.safe_put(id1_data[i_array], id2_data[i_array], <@type@> b_data[i_array * b_data_incx])
 
+            ############################################################################################################
+            # CASE: b is a number
+            ############################################################################################################
+            elif isinstance(b, (int, float, complex)):
+                # cast as correct data type once
+                b_scalar = <@type@> b
+
+                for i_array from 0 <= i_array < id1_array_length:
+                    self.safe_put(id1_data[i_array], id2_data[i_array], b_scalar)
 
             ############################################################################################################
             # CASE: b is ???
             ############################################################################################################
             else:
-                raise TypeError('Value argument should be a list or a NumPy array')
+                raise TypeError('Value argument should be a scalar, a list, or a NumPy array')
 
         ################################################################################################################
         # CASE: id1 and id2 ???
@@ -1598,7 +1620,7 @@ YOU HAVE TO EXPLICITY CAST YOUR TYPE
         Args:
             id1, id2: List or :program:`NumPy` arrays with indices. Both **must** be of the same type. In case of :program:`NumPy` arrays, they must
                 contain elements of type @index@.
-            b: :program:`NumpY` array to fill with the values.
+            b: :program:`NumPy` array to fill with the values.
 
         Raises:
             ``TypeError`` is both arguments to give indices are not of the same type (``list`` or :program:`NumPy` arrays) or if

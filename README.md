@@ -47,7 +47,10 @@ For the Cython version, include everything needed for Python and add:
 
 ### Cython version
 
-[TODO]
+Steps 1-3 are the same as the Python version, then:
+
+4. Invoke `python generate_code.py -r cysparse` to generate all the Cython files.
+5. Invoke `python setup.py install`.
 
 ## Run tests
 
