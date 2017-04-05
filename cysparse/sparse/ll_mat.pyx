@@ -6,7 +6,7 @@ from cysparse.sparse.s_mat cimport unexposed_value
 
 from cysparse.common_types.cysparse_types import *
 from cysparse.common_types.cysparse_types cimport *
-from cysparse.common_types.cysparse_numpy_types import are_mixed_types_cast_compatible
+from cysparse.common_types.cysparse_numpy_types import are_mixed_types_cast_compatible, cysparse_to_numpy_type
 
 from cysparse.sparse.s_mat cimport SparseMatrix, PySparseMatrix_Check, PyBothSparseMatricesAreOfSameType, PyLLSparseMatrix_Check, PyCSCSparseMatrix_Check, PyCSRSparseMatrix_Check
 from cysparse.sparse.s_mat import PySparseMatrix_Check, PyLLSparseMatrix_Check, PyCSCSparseMatrix_Check, PyCSRSparseMatrix_Check
@@ -738,6 +738,50 @@ def LLSparseMatrix(**kwargs):
                     return MakeLLSparseMatrixFromMMFile_INT64_t_COMPLEX128_t(mm_filename=mm_filename, store_zero=store_zero, test_bounds=test_bounds)
     
 
+def LLSparseMatrixChangeTypes(matrix, itype=None, dtype=None):
+    """
+    A factory method to change the index and/or data type of a given matrix
+    and preserve as much information as possible.
+
+    This method is especially useful in interfaces to Fortran and C linear
+    algebra modules where the type information is very specific, but we
+    don't want to clutter our Python code with type-checking.
+    """
+
+    # Check that the new data types are valid
+    if itype is None:
+        itype = matrix.itype
+
+    if dtype is None:
+        dtype = matrix.dtype
+
+    assert itype in INDEX_TYPES, "itype not recognized"
+    assert dtype in ELEMENT_TYPES, "dtype not recognized"
+
+    old_itype = matrix.itype
+    old_dtype = matrix.dtype
+
+    # Create the new matrix using data from the old matrix
+    new_mat = LLSparseMatrix(nrow=matrix.nrow,
+                ncol=matrix.ncol, itype=itype, dtype=dtype,
+                size_hint=matrix.nnz, store_zero=matrix.store_zero,
+                store_symmetric=matrix.store_symmetric)
+
+    # Populate the new matrix with all of the entries of the old matrix
+    irow, jcol, vals = matrix.find()
+
+    # Cast the index and data arrays to the correct type
+    if itype != old_itype:
+        irow = irow.astype(cysparse_to_numpy_type(itype))
+        jcol = jcol.astype(cysparse_to_numpy_type(itype))
+
+    if dtype != old_dtype:
+        vals = vals.astype(cysparse_to_numpy_type(dtype))
+
+    # Populate the new matrix and return
+    new_mat.put_triplet(irow, jcol, vals)
+
+    return new_mat
 
 
 def LLSparseMatrixFromMMFile(filename, store_zero=False, test_bounds=True):
