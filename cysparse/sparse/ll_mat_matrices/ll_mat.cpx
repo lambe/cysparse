@@ -952,13 +952,15 @@ YOU HAVE TO DEFINE OR CAST YOUR NEW UNRECOGNIZED COMPLEX TYPE
                     A = <LLSparseMatrix_@index@_@type@> obj
 
                     for i from 0 <= i < nrow:
-                        for j from 0 <= j <= i:
-                            self.put(row_indices[i], col_indices[j], A.at(i, j))
+                        for j from 0 <= j < ncol:
+                            if row_indices[i] >= col_indices[j]:
+                                self.put(row_indices[i], col_indices[j], A.at(i, j))
                 else:
                     # some type mismatch
                     for i from 0 <= i < nrow:
-                        for j from 0 <= j <= i:
-                            self.put(row_indices[i], col_indices[j], <@type@> obj[i, j])
+                        for j from 0 <= j < ncol:
+                            if row_indices[i] >= col_indices[j]:
+                                self.put(row_indices[i], col_indices[j], <@type@> obj[i, j])
 
             elif PyLLSparseMatrixView_Check(obj):
                 if obj.nrow != nrow or obj.ncol != ncol:
@@ -967,26 +969,29 @@ YOU HAVE TO DEFINE OR CAST YOUR NEW UNRECOGNIZED COMPLEX TYPE
                     A_view = <LLSparseMatrixView_@index@_@type@> obj
 
                     for i from 0 <= i < nrow:
-                        for j from 0 <= j <= i:
-                            self.put(row_indices[i], col_indices[j], A_view.at(i, j))
+                        for j from 0 <= j < ncol:
+                            if row_indices[i] >= col_indices[j]:
+                                self.put(row_indices[i], col_indices[j], A_view.at(i, j))
                 else:
                     # some type mismatch
                     for i from 0 <= i < nrow:
-                        for j from 0 <= j <= i:
-                            self.put(row_indices[i], col_indices[j], <@type@> obj[i, j])
+                        for j from 0 <= j < ncol:
+                            if row_indices[i] >= col_indices[j]:
+                                self.put(row_indices[i], col_indices[j], <@type@> obj[i, j])
 
             elif cnp.PyArray_Check(obj):
                 if (nrow, ncol) != obj.shape:
                     raise IndexError("Assigned NumPy ndarray should be of dimensions (%d,%d) (not (%d,%d))" % (nrow, ncol, obj.shape[0], obj.shape[1]))
                 for i from 0 <= i < nrow:
-                    for j from 0 <= j <= i:
-                        #self.put(row_indices[i], col_indices[j], <@type@> obj[tuple(i, j)])
-                        self.put(row_indices[i], col_indices[j], <@type@> obj[i, j])
+                    for j from 0 <= j < ncol:
+                        if row_indices[i] >= col_indices[j]:
+                            self.put(row_indices[i], col_indices[j], <@type@> obj[i, j])
 
             elif is_python_number(obj):
                 for i from 0 <= i < nrow:
-                    for j from 0 <= j <= i:
-                        self.put(row_indices[i], col_indices[j], <@type@> obj)
+                    for j from 0 <= j < ncol:
+                        if row_indices[i] >= col_indices[j]:
+                            self.put(row_indices[i], col_indices[j], <@type@> obj)
             else:
                 raise TypeError('Not assignment allowed with that type of object')
 
